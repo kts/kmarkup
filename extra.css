@@ -1,0 +1,11 @@
+section {
+    border: 1px solid mediumblue;
+    padding: 20px;
+
+    margin-top: 2em;
+    border-radius: 15px;
+}
+
+pre code {
+    background: #ccc;
+}

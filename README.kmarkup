@@ -1,0 +1,517 @@
+##
+## comments...
+##
+
+#ugly:
+{style
+
+```
+td,th {border: 1px solid #ccc}
+```
+
+}
+
+{sec \{kmarkup\}}
+{sec-push}
+
+`kmarkup` is a flexible, minimalist markup language based on ideas from Markdown, HTML, and LaTeX.
+
+It is **in-progress**. Anything might change at any point.
+
+At a very basic level, it looks like HTML with curly braces and no closing tags,
+
+{table
+{tr
+
+{td
+{pre ```
+<!-- HTML -->
+<foo>bar</foo>
+```}
+}
+
+{td {pre ```
+# kmarkup
+{foo bar}
+```}}
+
+}}
+
+
+But, also includes,
+
+{ul
+{li Some niceties from Markdown: ...}
+{li A unique handling of "sections"}
+{li More advanced features}
+{li A CLI with converter, server, etc}
+}
+
+
+Note: this page was generated from the source,
+`README.kmarkup`, via the following command,
+
+{pre ```
+kmarkup convert README.kmarkup README.html
+```}
+
+
+{sec Motiviation / Concepts}
+
+Markdown has become ubiquitous, but I don't like it for the following reasons,
+
+{ul
+
+{li Simple things (bold, italics, paragraph breaks) are simple, but complex things are hard or non-existant.
+}
+
+}
+
+*kmarkup sacrifices readability (Use of curly braces
+do not look like plain text), but gains in extensibility
+and ease in writing more complex structures.*
+
+
+{sec Syntax}
+
+kmarkup is a simple markup language.
+
+The subsections in this "Syntax" section will describe how to parse `kmarkup` in an AST.
+
+{sec-push}
+
+{sec AST}
+
+The AST will be represented in a JSON-like datastructure.
+
+{sec Tags}
+
+{p
+The concepts are similar to HTML / XML, but
+}
+
+{ul
+
+{li
+Elements are defined via curly brackets \{\} instead of angled brackets <>.
+}
+
+{li
+The start "tag" identifiers are ended by white space, rather than by closing bracket.
+}
+
+{li
+The closing tag does not repeat the name of the tag.
+}
+
+} # /ul
+
+
+Example in HTML,
+
+{pre ```
+This is <b>bold</b> and this is <b><i>bold and italic</i></b>.
+```}
+
+Same, in `kmarkup`,
+
+{pre {code ```
+This is {b bold} and this is {b {i bold and italic}}.
+```}}
+
+
+{sec Attributes}
+
+
+Optional "attributes" are demarked by backticks (GRAVE ACCENT) and can be multiple lines and can contain *arbitrary JSON* (i.e. nested dictionarys, and arrays, etc).
+
+{pre ```
+Write a {a `{"href":"/ok"}` link}.
+```}
+
+
+For short-hand, attributes can be full, valid JSON strings OR a simplified (but limited in expressibility) form,
+
+
+{ul
+
+{li "key = value" pairs (where both key and value are strings)}
+{li just an identifier}
+
+}
+
+Examples,
+
+{pre ```
+Write a {a `href=/ok` link}.
+```}
+
+
+
+{pre ```
+
+{foo `{"x": [5,10]}`} #=> attributes = {"x":[5,10]}
+
+{foo `x=5 y=okay`}    #=> attributes = {"x":"5", "y":"okay"}
+
+{foo `xyz`}           #=> attributes = "xyz"
+```
+}
+
+
+
+
+{sec Raw text}
+
+Triple backticks mark text without evaluating markup.
+
+For example,
+
+{pre ```
+~~~
+# one text child node
+{div ```foo```} == {div foo}
+~~~
+```}
+
+With triple backticks, we can write brackets and comment symbols as part of the text,
+
+{sec Markdown-like extras}
+
+...
+
+{sec-push}
+{sec Paragraphs}
+
+At the *top-level* (not nested inside brackets), blank lines create paragraphs (like Markdown),
+
+{pre ```
+p1
+
+p2
+```}
+
+is like,
+
+{pre ```
+{p p1}
+
+{p p2}
+```}
+
+
+{sec Italics and Bold}
+
+Like Markdown, we have the helpers for inline italics and bold (em and strong),
+
+{pre ```
+*abc* **xyz**
+```}
+
+Is like,
+
+{pre ```
+{em abc} {strong xyz}
+```}
+
+{sec-pop}
+
+{sec Comments}
+
+The symbol (NUMBER SIGN) denotes a comment that continues until the end of the line.
+
+
+{sec Escaping}
+
+The various syntax rules described can be escaped via
+backslashes.
+
+{ul
+  {li Comments}
+  {li Brackets}
+}
+
+
+
+{sec-pop}
+{sec Post-Syntax}
+
+"Post-syntax" refers to transformations that occur *after* the parse into an AST.
+
+{sec-push}
+
+{sec Sections}
+
+Instead of "wrapping" large parts of the input into "sections", we define a section with the tag `sec`.
+
+{pre ```
+
+{sec Title}
+
+Section contents.
+
+```}
+
+This becomes HTML like the following (not showing exact whitespace here),
+
+
+{pre ```
+<section>
+<h1>Title</h1>
+Section contents.
+</section>
+```}
+
+Multiple sections continue until the next section,
+
+{pre ```
+{sec t1}
+{sec t2}
+{sec t3}
+```
+}
+
+These are all at the same "level"
+and convert to something like,
+
+{pre ```
+<section><h1>t1</h1></section>
+<section><h1>t2</h1></section>
+<section><h1>t3</h1></section>
+```}
+
+This allows you to "cut" a number of "sections" and "paste"
+elsewhere and keep the substructure. Markdown (Number of \#)
+and HTML (number in <h_>) are both hard-coded.
+
+The *Depth* of a section is not written explicitly, but manipulated by special tags, `\{sec-push\}` and `\{sec-pop\}`.
+
+{pre ```
+{sec Title}
+{sec-push}
+  {sec Okay}
+  {sec Foo}
+  {sec-push}
+    {sec Bar}
+    {sec-pop}
+  {sec xyz}
+
+```}
+
+Produces nested sections like,
+
+{ul
+ {li Title
+  {ul
+    {li Okay}
+    {li Foo}
+
+{li
+{ul
+  {li Bar}
+}
+}
+
+
+    {li xyz}
+
+  }
+ }
+
+
+}
+
+
+
+Here is another typical example,
+
+{pre ```
+{sec Main Title}
+{sec-push}
+
+{sec Chapter 1}
+
+some text
+
+{sec Chapter 2}
+
+{sec-push}
+{sec Chapter 2.1}
+
+ok
+
+{sec Chapter 2.2}
+
+{sec-pop}
+
+{sec Chapter 3}
+```
+}
+
+
+{sec-pop}
+
+
+{sec Implementation}
+
+`kmarkup` is implemented in Python.
+
+The core parser should produce an AST.
+A summary of types is as follows,
+
+
+{pre
+```
+TextOrNode : Node | string
+
+Node
+.tag : string
+.attributes : Any
+.children : [TextOrNode]
+
+# top-level: list of nodes.
+Document
+.nodes : [TextOrNode]
+
+```
+}
+
+
+
+{sec Tools}
+{sec-push}
+
+{sec Command-line interface}
+
+Installing this Python package will install the `kmarkup` command-line tool.
+
+It includes the following "subcommands",
+
+{ul
+{li **convert**
+
+Example,
+
+{pre ```
+kmarkup convert INFILE OUTFILE
+```}
+
+{ul
+  {li Output format is determined by file extension on OUTFILE.
+
+   {ul
+      {li .html}
+      {li .json : store the parsed AST.}
+   }
+
+OR, output format
+can be given by `--format FORMAT`. (currently can be `html` or `json`).
+
+
+  } # li: output format
+
+{li
+`OUTFILE` can be `-` for stdout. In this case, you must give `--format`.
+}
+
+
+{li
+Instead of given `INFILE`, you can give `--input STRING`, where `STRING` is the actual `kmarkup` content.
+}
+
+{li "--css FILE". Insert contents to `<style></style>`.}
+
+{li "--template NAME". NAME can be `basic` or `none`.}
+
+
+} # end ul
+
+} # end convert
+
+{li **server**
+
+}
+
+
+} #/ul
+
+
+
+
+{sec-push}
+{sec Templates}
+
+For HTML output, we have built-in "templates" (In the CLI, use --template NAME).
+
+{ul
+{li **none**}
+{li **basic** DOCTYPE, HTML, and simple CSS for clean, minimal page.}
+{li **default**: DOCTYPE, HTML, and simple CSS for clean, minimal page. Plus, a table-of-contents (based on sections) on the left-side. Responsive and mobile friendly.}
+}
+
+
+
+{sec-pop}
+
+
+{sec Emacs}
+
+`./kmarkup-mode.el` implements a basic major-mode for Emacs.
+
+It should implement,
+
+{ul
+
+{li basic syntax highlighting}
+{li tags (identifiers following `\{`).}
+{li brackets}
+{li triple-quoted raw strings}
+{li special formatting for `\{sec TITLE\}`.}
+
+}
+
+Usage:
+
+{pre ```
+(load-file "/path/to/kmarkup-mode.el")
+```}
+
+{sec kdocs}
+
+`kdocs` is a full-blown documentation system
+that uses `kmarkup`.
+
+Todo: link and explain.
+
+{sec-pop}
+
+
+{sec Tests}
+
+We should have extensive test suite.
+
+Write most examples as (comment, inputs, AST) triples...
+
+See `tests/`test_parser.py`.
+
+
+{sec Todo}
+
+{ul
+{li math mode}
+{li variables}
+}
+
+
+{sec Links}
+
+{ul
+
+{li
+{a
+ `href=https://bgslabs.org/blog/why-are-we-using-markdown/`
+ Why the heck are we still using Markdown??
+}
+}
+
+}
